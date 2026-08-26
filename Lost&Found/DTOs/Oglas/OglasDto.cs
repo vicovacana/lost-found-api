@@ -9,6 +9,8 @@ namespace Lost_Found.DTOs.Oglas
         public string Opis { get; set; } = string.Empty;
         public DateTime DatumKreiranja { get; set; }
         public TipOglasa Tip { get; set; }
+        public Kategorija Kategorija { get; set; }
+        public string Grad { get; set; } = string.Empty;
         public decimal? Latitude { get; set; }
         public decimal? Longitude { get; set; }
         public string? Fotografija { get; set; }

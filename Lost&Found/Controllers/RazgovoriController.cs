@@ -16,6 +16,12 @@ namespace Lost_Found.Controllers
             _razgovorService = razgovorService;
         }
 
+        [HttpGet("api/razgovori/mine")]
+        public async Task<ActionResult<IReadOnlyList<RazgovorDto>>> GetMine()
+        {
+            return Ok(await _razgovorService.GetMineAsync(CurrentKorisnikId, IsAdmin));
+        }
+
         [HttpPost("api/oglasi/{oglasId:int}/razgovor")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<RazgovorDto>> Open(int oglasId)

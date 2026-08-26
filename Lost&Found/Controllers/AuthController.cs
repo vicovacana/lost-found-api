@@ -28,5 +28,11 @@ namespace Lost_Found.Controllers
         {
             return Ok(await _authService.LoginAsync(dto));
         }
+
+        [HttpPost("register-admin")]
+        public async Task<ActionResult<AuthResponseDto>> RegisterAdmin(RegisterAdminDto dto)
+        {
+            return Ok(await _authService.RegisterAdminAsync(dto));
+        }
     }
 }

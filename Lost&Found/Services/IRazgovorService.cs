@@ -9,8 +9,7 @@ namespace Lost_Found.Services
         Task<RazgovorDto> GetForOglasAsync(int oglasId, int currentKorisnikId, bool isAdmin);
         Task<RazgovorDto> GetByIdAsync(int razgovorId, int currentKorisnikId, bool isAdmin);
         Task<RazgovorDto> UpdateStatusAsync(int razgovorId, StatusRazgovora noviStatus);
-
-        // Reused by PorukeController to enforce the "admin, oglas owner, or a claimant" access rule.
+        Task<IReadOnlyList<RazgovorDto>> GetMineAsync(int currentKorisnikId, bool isAdmin);
         Task EnsureParticipantAsync(int razgovorId, int currentKorisnikId, bool isAdmin);
     }
 }

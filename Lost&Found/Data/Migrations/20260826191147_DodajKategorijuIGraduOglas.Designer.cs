@@ -11,8 +11,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Lost_Found.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260825203330_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260826191147_DodajKategorijuIGraduOglas")]
+    partial class DodajKategorijuIGraduOglas
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -101,6 +101,18 @@ namespace Lost_Found.Data.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("fotografija");
 
+                    b.Property<string>("Grad")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("grad");
+
+                    b.Property<string>("Kategorija")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("kategorija");
+
                     b.Property<int>("KreatorId")
                         .HasColumnType("integer")
                         .HasColumnName("kreatorID");
@@ -132,6 +144,10 @@ namespace Lost_Found.Data.Migrations
                     b.HasKey("OglasId");
 
                     b.HasIndex("AdminId");
+
+                    b.HasIndex("Grad");
+
+                    b.HasIndex("Kategorija");
 
                     b.HasIndex("KreatorId");
 

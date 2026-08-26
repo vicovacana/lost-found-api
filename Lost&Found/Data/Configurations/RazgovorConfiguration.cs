@@ -26,7 +26,6 @@ namespace Lost_Found.Data.Configurations
 
             builder.Property(r => r.OglasId).HasColumnName("oglasID").IsRequired();
 
-            // Enforces the "an Oglas has at most one Razgovor" 0..1 relationship.
             builder.HasIndex(r => r.OglasId).IsUnique();
 
             builder.HasOne(r => r.Oglas)

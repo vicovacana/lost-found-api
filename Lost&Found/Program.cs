@@ -14,10 +14,7 @@ namespace Lost_Found
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-
             builder.Services.AddControllers();
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
 
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -49,6 +46,15 @@ namespace Lost_Found
 
             builder.Services.AddAuthorization();
 
+            const string AngularDevCors = "AngularDev";
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy(AngularDevCors, policy =>
+                    policy.WithOrigins("http://localhost:4200")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod());
+            });
+
             builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IKorisnikService, KorisnikService>();
@@ -59,7 +65,6 @@ namespace Lost_Found
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.MapOpenApi();
@@ -68,6 +73,9 @@ namespace Lost_Found
             app.UseMiddleware<ExceptionHandlingMiddleware>();
 
             app.UseHttpsRedirection();
+            app.UseStaticFiles();
+
+            app.UseCors(AngularDevCors);
 
             app.UseAuthentication();
             app.UseAuthorization();

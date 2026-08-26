@@ -6,8 +6,6 @@ namespace Lost_Found.Data.Configurations
 {
     public class AdminConfiguration : IEntityTypeConfiguration<Admin>
     {
-        // Seeded default admin so there is a way to log in before any registration exists.
-        // Password is "Admin123!" - change/remove this account before any real deployment.
         public void Configure(EntityTypeBuilder<Admin> builder)
         {
             builder.HasMany(a => a.NadgledaniOglasi)

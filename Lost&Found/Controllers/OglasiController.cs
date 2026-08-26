@@ -20,9 +20,10 @@ namespace Lost_Found.Controllers
         [HttpGet]
         [AllowAnonymous]
         public async Task<ActionResult<IReadOnlyList<OglasDto>>> GetAll(
-            [FromQuery] TipOglasa? tip, [FromQuery] int? kreatorId, [FromQuery] int? adminId)
+            [FromQuery] TipOglasa? tip, [FromQuery] int? kreatorId, [FromQuery] int? adminId,
+            [FromQuery] Kategorija? kategorija, [FromQuery] string? grad, [FromQuery] bool? samoAktivni)
         {
-            return Ok(await _oglasService.GetAllAsync(tip, kreatorId, adminId));
+            return Ok(await _oglasService.GetAllAsync(tip, kreatorId, adminId, kategorija, grad, samoAktivni));
         }
 
         [HttpGet("{id:int}")]
@@ -38,6 +39,16 @@ namespace Lost_Found.Controllers
         {
             var result = await _oglasService.CreateAsync(CurrentKorisnikId, dto);
             return CreatedAtAction(nameof(GetById), new { id = result.OglasId }, result);
+        }
+
+        [HttpPost("fotografije")]
+        [Authorize(Roles = "StandardniKorisnik")]
+        [RequestSizeLimit(5_000_000)]
+        public async Task<ActionResult<UploadFotografijeResponseDto>> UploadFotografija(IFormFile fajl)
+        {
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var url = await _oglasService.SacuvajFotografijuAsync(fajl, baseUrl);
+            return Ok(new UploadFotografijeResponseDto { Url = url });
         }
 
         [HttpPut("{id:int}")]

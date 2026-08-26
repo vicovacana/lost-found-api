@@ -38,6 +38,17 @@ namespace Lost_Found.Data.Configurations
                 .IsRequired()
                 .HasConversion<int>();
 
+            builder.Property(o => o.Kategorija)
+                .HasColumnName("kategorija")
+                .IsRequired()
+                .HasConversion<string>()
+                .HasMaxLength(50);
+
+            builder.Property(o => o.Grad)
+                .HasColumnName("grad")
+                .IsRequired()
+                .HasMaxLength(100);
+
             builder.Property(o => o.Latitude)
                 .HasColumnName("latitude")
                 .HasColumnType("decimal(10,8)");
@@ -56,6 +67,8 @@ namespace Lost_Found.Data.Configurations
             builder.HasIndex(o => o.KreatorId);
             builder.HasIndex(o => o.AdminId);
             builder.HasIndex(o => o.Tip);
+            builder.HasIndex(o => o.Kategorija);
+            builder.HasIndex(o => o.Grad);
         }
     }
 }

@@ -14,6 +14,12 @@ namespace Lost_Found.DTOs.Oglas
         [Required]
         public TipOglasa Tip { get; set; }
 
+        [Required]
+        public Kategorija Kategorija { get; set; }
+
+        [Required, MaxLength(100)]
+        public string Grad { get; set; } = string.Empty;
+
         [Range(-90, 90)]
         public decimal? Latitude { get; set; }
 

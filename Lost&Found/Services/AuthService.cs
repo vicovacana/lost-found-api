@@ -10,11 +10,13 @@ namespace Lost_Found.Services
     {
         private readonly ApplicationDbContext _db;
         private readonly IJwtTokenService _jwtTokenService;
+        private readonly IConfiguration _configuration;
 
-        public AuthService(ApplicationDbContext db, IJwtTokenService jwtTokenService)
+        public AuthService(ApplicationDbContext db, IJwtTokenService jwtTokenService, IConfiguration configuration)
         {
             _db = db;
             _jwtTokenService = jwtTokenService;
+            _configuration = configuration;
         }
 
         public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
@@ -38,6 +40,35 @@ namespace Lost_Found.Services
             await _db.SaveChangesAsync();
 
             return BuildResponse(korisnik);
+        }
+
+        public async Task<AuthResponseDto> RegisterAdminAsync(RegisterAdminDto dto)
+        {
+            var tajniKod = _configuration["Admin:RegistrationSecret"];
+            if (string.IsNullOrEmpty(tajniKod) || dto.TajniKod != tajniKod)
+            {
+                throw new ValidationException("Pogrešan tajni kod.");
+            }
+
+            var postoji = await _db.Korisnici.AnyAsync(k =>
+                k.KorisnickoIme == dto.KorisnickoIme || k.Email == dto.Email);
+            if (postoji)
+            {
+                throw new ConflictException("Korisničko ime ili email su već zauzeti.");
+            }
+
+            var admin = new Admin
+            {
+                KorisnickoIme = dto.KorisnickoIme,
+                Email = dto.Email,
+                LozinkaHash = BCrypt.Net.BCrypt.HashPassword(dto.Lozinka),
+                VremeKreiranja = DateTime.UtcNow
+            };
+
+            _db.Admini.Add(admin);
+            await _db.SaveChangesAsync();
+
+            return BuildResponse(admin);
         }
 
         public async Task<AuthResponseDto> LoginAsync(LoginDto dto)

@@ -85,6 +85,15 @@ namespace Lost_Found.Services
             potrazivanje.Status = noviStatus;
             potrazivanje.DatumRazresavanja = DateTime.UtcNow;
 
+            if (noviStatus == StatusPotrazivanja.Prihvaceno)
+            {
+                var razgovor = await _db.Razgovori.FirstOrDefaultAsync(r => r.OglasId == oglasId);
+                if (razgovor is not null && razgovor.StatusRazgovora == StatusRazgovora.Otvoren)
+                {
+                    razgovor.StatusRazgovora = StatusRazgovora.Zatvoren;
+                }
+            }
+
             await _db.SaveChangesAsync();
 
             return ToDto(potrazivanje);

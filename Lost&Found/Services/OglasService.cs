@@ -3,26 +3,51 @@ using Lost_Found.Data;
 using Lost_Found.DTOs.Oglas;
 using Lost_Found.Models;
 using Lost_Found.Models.Enums;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace Lost_Found.Services
 {
     public class OglasService : IOglasService
     {
-        private readonly ApplicationDbContext _db;
+        private static readonly Dictionary<string, string> DozvoljeniTipovi = new()
+        {
+            ["image/jpeg"] = ".jpg",
+            ["image/png"] = ".png",
+            ["image/webp"] = ".webp",
+            ["image/gif"] = ".gif",
+        };
+        private const long MaxVelicinaFajlaBajtova = 5 * 1024 * 1024;
 
-        public OglasService(ApplicationDbContext db)
+        private readonly ApplicationDbContext _db;
+        private readonly IWebHostEnvironment _env;
+
+        public OglasService(ApplicationDbContext db, IWebHostEnvironment env)
         {
             _db = db;
+            _env = env;
         }
 
-        public async Task<IReadOnlyList<OglasDto>> GetAllAsync(TipOglasa? tip, int? kreatorId, int? adminId)
+        public async Task<IReadOnlyList<OglasDto>> GetAllAsync(TipOglasa? tip, int? kreatorId, int? adminId, Kategorija? kategorija, string? grad, bool? samoAktivni)
         {
             var query = _db.Oglasi.Include(o => o.Kreator).AsQueryable();
 
             if (tip.HasValue) query = query.Where(o => o.Tip == tip.Value);
             if (kreatorId.HasValue) query = query.Where(o => o.KreatorId == kreatorId.Value);
             if (adminId.HasValue) query = query.Where(o => o.AdminId == adminId.Value);
+            if (kategorija.HasValue) query = query.Where(o => o.Kategorija == kategorija.Value);
+            if (!string.IsNullOrWhiteSpace(grad))
+            {
+                var gradTrimmed = grad.Trim();
+                query = query.Where(o => EF.Functions.ILike(o.Grad, gradTrimmed));
+            }
+            if (samoAktivni.HasValue)
+            {
+                query = samoAktivni.Value
+                    ? query.Where(o => o.Razgovor == null || o.Razgovor.StatusRazgovora != StatusRazgovora.Zatvoren)
+                    : query.Where(o => o.Razgovor != null && o.Razgovor.StatusRazgovora == StatusRazgovora.Zatvoren);
+            }
 
             var oglasi = await query.OrderByDescending(o => o.DatumKreiranja).ToListAsync();
             return oglasi.Select(ToDto).ToList();
@@ -44,6 +69,8 @@ namespace Lost_Found.Services
                 Naziv = dto.Naziv,
                 Opis = dto.Opis,
                 Tip = dto.Tip,
+                Kategorija = dto.Kategorija,
+                Grad = dto.Grad,
                 Latitude = dto.Latitude,
                 Longitude = dto.Longitude,
                 Fotografija = dto.Fotografija,
@@ -71,6 +98,8 @@ namespace Lost_Found.Services
             oglas.Naziv = dto.Naziv;
             oglas.Opis = dto.Opis;
             oglas.Tip = dto.Tip;
+            oglas.Kategorija = dto.Kategorija;
+            oglas.Grad = dto.Grad;
             oglas.Latitude = dto.Latitude;
             oglas.Longitude = dto.Longitude;
             oglas.Fotografija = dto.Fotografija;
@@ -115,6 +144,37 @@ namespace Lost_Found.Services
             return ToDto(oglas);
         }
 
+        public async Task<string> SacuvajFotografijuAsync(IFormFile fajl, string baseUrl)
+        {
+            if (fajl is null || fajl.Length == 0)
+            {
+                throw new ValidationException("Fajl nije poslat.");
+            }
+
+            if (fajl.Length > MaxVelicinaFajlaBajtova)
+            {
+                throw new ValidationException("Fotografija ne sme biti veća od 5 MB.");
+            }
+
+            if (!DozvoljeniTipovi.TryGetValue(fajl.ContentType, out var ekstenzija))
+            {
+                throw new ValidationException("Dozvoljeni formati su JPG, PNG, WEBP i GIF.");
+            }
+
+            var direktorijum = Path.Combine(_env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot"), "uploads", "oglasi");
+            Directory.CreateDirectory(direktorijum);
+
+            var imeFajla = $"{Guid.NewGuid()}{ekstenzija}";
+            var putanja = Path.Combine(direktorijum, imeFajla);
+
+            await using (var stream = new FileStream(putanja, FileMode.Create))
+            {
+                await fajl.CopyToAsync(stream);
+            }
+
+            return $"{baseUrl}/uploads/oglasi/{imeFajla}";
+        }
+
         private static OglasDto ToDto(Oglas oglas) => new()
         {
             OglasId = oglas.OglasId,
@@ -122,6 +182,8 @@ namespace Lost_Found.Services
             Opis = oglas.Opis,
             DatumKreiranja = oglas.DatumKreiranja,
             Tip = oglas.Tip,
+            Kategorija = oglas.Kategorija,
+            Grad = oglas.Grad,
             Latitude = oglas.Latitude,
             Longitude = oglas.Longitude,
             Fotografija = oglas.Fotografija,
