@@ -73,10 +73,11 @@ namespace Lost_Found.Services
         {
             IQueryable<Razgovor> query = _db.Razgovori.Include(r => r.Oglas);
 
-            query = isAdmin
-                ? query.Where(r => r.Oglas.AdminId == currentKorisnikId)
-                : query.Where(r => r.Oglas.KreatorId == currentKorisnikId
+            if (!isAdmin)
+            {
+                query = query.Where(r => r.Oglas.KreatorId == currentKorisnikId
                     || _db.Potrazivanja.Any(p => p.OglasId == r.OglasId && p.KorisnikId == currentKorisnikId));
+            }
 
             var razgovori = await query.OrderByDescending(r => r.DatumKreiranja).ToListAsync();
 
