@@ -92,6 +92,16 @@ namespace Lost_Found.Services
                 {
                     razgovor.StatusRazgovora = StatusRazgovora.Zatvoren;
                 }
+
+                var ostalaNaCekanju = await _db.Potrazivanja
+                    .Where(p => p.OglasId == oglasId && p.KorisnikId != korisnikId && p.Status == StatusPotrazivanja.NaCekanju)
+                    .ToListAsync();
+
+                foreach (var ostalo in ostalaNaCekanju)
+                {
+                    ostalo.Status = StatusPotrazivanja.Odbijeno;
+                    ostalo.DatumRazresavanja = DateTime.UtcNow;
+                }
             }
 
             await _db.SaveChangesAsync();
