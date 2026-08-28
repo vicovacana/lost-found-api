@@ -37,7 +37,7 @@ namespace Lost_Found.Services
             _db.Razgovori.Add(razgovor);
             await _db.SaveChangesAsync();
 
-            return ToDto(razgovor, oglas.Naziv);
+            return ToDto(razgovor, oglas, prikaziOpisLokacije: false);
         }
 
         public async Task<RazgovorDto> GetForOglasAsync(int oglasId, int currentKorisnikId, bool isAdmin)
@@ -46,7 +46,7 @@ namespace Lost_Found.Services
                 ?? throw new NotFoundException($"Razgovor za oglas {oglasId} ne postoji.");
 
             await EnsureParticipantAsync(currentKorisnikId, isAdmin, razgovor);
-            return ToDto(razgovor, razgovor.Oglas.Naziv);
+            return await ToDtoAsync(razgovor, razgovor.Oglas, currentKorisnikId);
         }
 
         public async Task<RazgovorDto> GetByIdAsync(int razgovorId, int currentKorisnikId, bool isAdmin)
@@ -55,7 +55,7 @@ namespace Lost_Found.Services
                 ?? throw new NotFoundException($"Razgovor {razgovorId} ne postoji.");
 
             await EnsureParticipantAsync(currentKorisnikId, isAdmin, razgovor);
-            return ToDto(razgovor, razgovor.Oglas.Naziv);
+            return await ToDtoAsync(razgovor, razgovor.Oglas, currentKorisnikId);
         }
 
         public async Task<RazgovorDto> UpdateStatusAsync(int razgovorId, StatusRazgovora noviStatus)
@@ -66,7 +66,7 @@ namespace Lost_Found.Services
             razgovor.StatusRazgovora = noviStatus;
             await _db.SaveChangesAsync();
 
-            return ToDto(razgovor, razgovor.Oglas.Naziv);
+            return ToDto(razgovor, razgovor.Oglas, prikaziOpisLokacije: false);
         }
 
         public async Task<IReadOnlyList<RazgovorDto>> GetMineAsync(int currentKorisnikId, bool isAdmin)
@@ -79,7 +79,15 @@ namespace Lost_Found.Services
                     || _db.Potrazivanja.Any(p => p.OglasId == r.OglasId && p.KorisnikId == currentKorisnikId));
 
             var razgovori = await query.OrderByDescending(r => r.DatumKreiranja).ToListAsync();
-            return razgovori.Select(r => ToDto(r, r.Oglas.Naziv)).ToList();
+
+            var oglasIdsPotvrdjenihZaMene = await _db.Potrazivanja
+                .Where(p => p.KorisnikId == currentKorisnikId && p.Status == StatusPotrazivanja.Prihvaceno
+                    && razgovori.Select(r => r.OglasId).Contains(p.OglasId))
+                .Select(p => p.OglasId)
+                .ToListAsync();
+            var potvrdjeniSet = oglasIdsPotvrdjenihZaMene.ToHashSet();
+
+            return razgovori.Select(r => ToDto(r, r.Oglas, potvrdjeniSet.Contains(r.OglasId))).ToList();
         }
 
         public async Task EnsureParticipantAsync(int razgovorId, int currentKorisnikId, bool isAdmin)
@@ -112,13 +120,22 @@ namespace Lost_Found.Services
             throw new ForbiddenException("Nemate pristup ovom razgovoru.");
         }
 
-        private static RazgovorDto ToDto(Razgovor razgovor, string oglasNaziv) => new()
+        private async Task<RazgovorDto> ToDtoAsync(Razgovor razgovor, Oglas oglas, int currentKorisnikId)
+        {
+            var jePotvrdjeniPotrazivac = await _db.Potrazivanja.AnyAsync(p =>
+                p.OglasId == razgovor.OglasId && p.KorisnikId == currentKorisnikId && p.Status == StatusPotrazivanja.Prihvaceno);
+
+            return ToDto(razgovor, oglas, jePotvrdjeniPotrazivac);
+        }
+
+        private static RazgovorDto ToDto(Razgovor razgovor, Oglas oglas, bool prikaziOpisLokacije) => new()
         {
             RazgovorId = razgovor.RazgovorId,
             DatumKreiranja = razgovor.DatumKreiranja,
             StatusRazgovora = razgovor.StatusRazgovora,
             OglasId = razgovor.OglasId,
-            OglasNaziv = oglasNaziv
+            OglasNaziv = oglas.Naziv,
+            OpisLokacije = prikaziOpisLokacije ? oglas.OpisLokacije : null
         };
     }
 }

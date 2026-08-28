@@ -12,6 +12,8 @@ namespace Lost_Found
     {
         public static void Main(string[] args)
         {
+            Directory.CreateDirectory(Path.Combine(AppContext.BaseDirectory, "wwwroot", "uploads", "oglasi"));
+
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddControllers();

@@ -30,7 +30,7 @@ namespace Lost_Found.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<OglasDto>> GetById(int id)
         {
-            return Ok(await _oglasService.GetByIdAsync(id));
+            return Ok(await _oglasService.GetByIdAsync(id, CurrentKorisnikIdOrNull, IsAdmin));
         }
 
         [HttpPost]

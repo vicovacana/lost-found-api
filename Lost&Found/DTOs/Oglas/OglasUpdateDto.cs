@@ -28,5 +28,8 @@ namespace Lost_Found.DTOs.Oglas
 
         [MaxLength(500)]
         public string? Fotografija { get; set; }
+
+        [MaxLength(500)]
+        public string? OpisLokacije { get; set; }
     }
 }

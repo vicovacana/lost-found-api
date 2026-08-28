@@ -14,6 +14,8 @@ namespace Lost_Found.DTOs.Oglas
         public decimal? Latitude { get; set; }
         public decimal? Longitude { get; set; }
         public string? Fotografija { get; set; }
+        public string? OpisLokacije { get; set; }
+
         public int KreatorId { get; set; }
         public string KreatorKorisnickoIme { get; set; } = string.Empty;
         public int? AdminId { get; set; }

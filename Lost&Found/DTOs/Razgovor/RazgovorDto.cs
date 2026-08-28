@@ -9,5 +9,6 @@ namespace Lost_Found.DTOs.Razgovor
         public StatusRazgovora StatusRazgovora { get; set; }
         public int OglasId { get; set; }
         public string OglasNaziv { get; set; } = string.Empty;
+        public string? OpisLokacije { get; set; }
     }
 }

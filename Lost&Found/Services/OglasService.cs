@@ -50,16 +50,17 @@ namespace Lost_Found.Services
             }
 
             var oglasi = await query.OrderByDescending(o => o.DatumKreiranja).ToListAsync();
-            return oglasi.Select(ToDto).ToList();
+            return oglasi.Select(o => ToDto(o)).ToList();
         }
 
-        public async Task<OglasDto> GetByIdAsync(int oglasId)
+        public async Task<OglasDto> GetByIdAsync(int oglasId, int? currentKorisnikId, bool isAdmin)
         {
             var oglas = await _db.Oglasi.Include(o => o.Kreator)
                 .FirstOrDefaultAsync(o => o.OglasId == oglasId)
                 ?? throw new NotFoundException($"Oglas {oglasId} ne postoji.");
 
-            return ToDto(oglas);
+            var smeVidiOpisLokacije = isAdmin || (currentKorisnikId.HasValue && oglas.KreatorId == currentKorisnikId.Value);
+            return ToDto(oglas, smeVidiOpisLokacije);
         }
 
         public async Task<OglasDto> CreateAsync(int kreatorId, OglasCreateDto dto)
@@ -74,6 +75,7 @@ namespace Lost_Found.Services
                 Latitude = dto.Latitude,
                 Longitude = dto.Longitude,
                 Fotografija = dto.Fotografija,
+                OpisLokacije = NormalizujOpisLokacije(dto.Tip, dto.OpisLokacije),
                 KreatorId = kreatorId,
                 DatumKreiranja = DateTime.UtcNow
             };
@@ -81,7 +83,7 @@ namespace Lost_Found.Services
             _db.Oglasi.Add(oglas);
             await _db.SaveChangesAsync();
 
-            return await GetByIdAsync(oglas.OglasId);
+            return await GetByIdAsync(oglas.OglasId, kreatorId, isAdmin: false);
         }
 
         public async Task<OglasDto> UpdateAsync(int oglasId, int currentKorisnikId, bool isAdmin, OglasUpdateDto dto)
@@ -103,10 +105,11 @@ namespace Lost_Found.Services
             oglas.Latitude = dto.Latitude;
             oglas.Longitude = dto.Longitude;
             oglas.Fotografija = dto.Fotografija;
+            oglas.OpisLokacije = NormalizujOpisLokacije(dto.Tip, dto.OpisLokacije);
 
             await _db.SaveChangesAsync();
 
-            return ToDto(oglas);
+            return ToDto(oglas, ukljuciOpisLokacije: true);
         }
 
         public async Task DeleteAsync(int oglasId, int currentKorisnikId, bool isAdmin)
@@ -175,7 +178,17 @@ namespace Lost_Found.Services
             return $"{baseUrl}/uploads/oglasi/{imeFajla}";
         }
 
-        private static OglasDto ToDto(Oglas oglas) => new()
+        private static string? NormalizujOpisLokacije(TipOglasa tip, string? opisLokacije)
+        {
+            if (tip != TipOglasa.Nadjeno || string.IsNullOrWhiteSpace(opisLokacije))
+            {
+                return null;
+            }
+
+            return opisLokacije.Trim();
+        }
+
+        private static OglasDto ToDto(Oglas oglas, bool ukljuciOpisLokacije = false) => new()
         {
             OglasId = oglas.OglasId,
             Naziv = oglas.Naziv,
@@ -187,6 +200,7 @@ namespace Lost_Found.Services
             Latitude = oglas.Latitude,
             Longitude = oglas.Longitude,
             Fotografija = oglas.Fotografija,
+            OpisLokacije = ukljuciOpisLokacije ? oglas.OpisLokacije : null,
             KreatorId = oglas.KreatorId,
             KreatorKorisnickoIme = oglas.Kreator?.KorisnickoIme ?? string.Empty,
             AdminId = oglas.AdminId
