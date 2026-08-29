@@ -5,9 +5,9 @@ namespace Lost_Found.DTOs.Auth
     public class LoginDto
     {
         [Required]
-        public string KorisnickoIme { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
 
         [Required]
-        public string Lozinka { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
     }
 }

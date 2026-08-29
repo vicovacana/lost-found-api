@@ -59,11 +59,11 @@ namespace Lost_Found
 
             builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
-            builder.Services.AddScoped<IKorisnikService, KorisnikService>();
-            builder.Services.AddScoped<IOglasService, OglasService>();
-            builder.Services.AddScoped<IPotrazivanjeService, PotrazivanjeService>();
-            builder.Services.AddScoped<IRazgovorService, RazgovorService>();
-            builder.Services.AddScoped<IPorukaService, PorukaService>();
+            builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<IListingService, ListingService>();
+            builder.Services.AddScoped<IClaimService, ClaimService>();
+            builder.Services.AddScoped<IConversationService, ConversationService>();
+            builder.Services.AddScoped<IMessageService, MessageService>();
 
             var app = builder.Build();
 

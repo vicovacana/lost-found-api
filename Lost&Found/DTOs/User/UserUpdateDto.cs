@@ -1,19 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Lost_Found.DTOs.Auth
+namespace Lost_Found.DTOs.User
 {
-    public class RegisterAdminDto
+    public class UserUpdateDto
     {
         [Required, MaxLength(50)]
         public string Username { get; set; } = string.Empty;
 
         [Required, EmailAddress, MaxLength(256)]
         public string Email { get; set; } = string.Empty;
-
-        [Required, MinLength(6)]
-        public string Password { get; set; } = string.Empty;
-
-        [Required]
-        public string SecretCode { get; set; } = string.Empty;
     }
 }

@@ -1,8 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using System.Text;
 using Lost_Found.Models;
 using Microsoft.IdentityModel.Tokens;
+using Claim = System.Security.Claims.Claim;
+using ClaimTypes = System.Security.Claims.ClaimTypes;
 
 namespace Lost_Found.Services
 {
@@ -15,7 +16,7 @@ namespace Lost_Found.Services
             _configuration = configuration;
         }
 
-        public string GenerateToken(Korisnik korisnik)
+        public string GenerateToken(User user)
         {
             var jwtSection = _configuration.GetSection("Jwt");
             var key = jwtSection["Key"];
@@ -24,13 +25,13 @@ namespace Lost_Found.Services
                 throw new InvalidOperationException("Jwt:Key is not configured.");
             }
 
-            var role = korisnik is Admin ? "Admin" : "StandardniKorisnik";
+            var role = user is Admin ? "Admin" : "StandardUser";
 
             var claims = new List<Claim>
             {
-                new(ClaimTypes.NameIdentifier, korisnik.KorisnikId.ToString()),
-                new(ClaimTypes.Name, korisnik.KorisnickoIme),
-                new(ClaimTypes.Email, korisnik.Email),
+                new(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+                new(ClaimTypes.Name, user.Username),
+                new(ClaimTypes.Email, user.Email),
                 new(ClaimTypes.Role, role)
             };
 

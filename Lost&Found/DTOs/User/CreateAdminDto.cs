@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Lost_Found.DTOs.Auth
+namespace Lost_Found.DTOs.User
 {
-    public class RegisterAdminDto
+    public class CreateAdminDto
     {
         [Required, MaxLength(50)]
         public string Username { get; set; } = string.Empty;
@@ -12,8 +12,5 @@ namespace Lost_Found.DTOs.Auth
 
         [Required, MinLength(6)]
         public string Password { get; set; } = string.Empty;
-
-        [Required]
-        public string SecretCode { get; set; } = string.Empty;
     }
 }

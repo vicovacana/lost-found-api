@@ -4,6 +4,6 @@ namespace Lost_Found.Services
 {
     public interface IJwtTokenService
     {
-        string GenerateToken(Korisnik korisnik);
+        string GenerateToken(User user);
     }
 }

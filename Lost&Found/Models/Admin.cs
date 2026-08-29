@@ -1,7 +1,7 @@
 namespace Lost_Found.Models
 {
-    public class Admin : Korisnik
+    public class Admin : User
     {
-        public ICollection<Oglas> NadgledaniOglasi { get; set; } = new List<Oglas>();
+        public ICollection<Listing> SupervisedListings { get; set; } = new List<Listing>();
     }
 }

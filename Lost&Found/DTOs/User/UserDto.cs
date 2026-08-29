@@ -1,11 +1,11 @@
-namespace Lost_Found.DTOs.Auth
+namespace Lost_Found.DTOs.User
 {
-    public class AuthResponseDto
+    public class UserDto
     {
-        public string Token { get; set; } = string.Empty;
         public int UserId { get; set; }
         public string Username { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
         public string Role { get; set; } = string.Empty;
     }
 }

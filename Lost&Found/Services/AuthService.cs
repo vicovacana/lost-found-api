@@ -21,51 +21,51 @@ namespace Lost_Found.Services
 
         public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
         {
-            var postoji = await _db.Korisnici.AnyAsync(k =>
-                k.KorisnickoIme == dto.KorisnickoIme || k.Email == dto.Email);
-            if (postoji)
+            var exists = await _db.Users.AnyAsync(k =>
+                k.Username == dto.Username || k.Email == dto.Email);
+            if (exists)
             {
                 throw new ConflictException("Korisničko ime ili email su već zauzeti.");
             }
 
-            var korisnik = new StandardniKorisnik
+            var user = new StandardUser
             {
-                KorisnickoIme = dto.KorisnickoIme,
+                Username = dto.Username,
                 Email = dto.Email,
-                LozinkaHash = BCrypt.Net.BCrypt.HashPassword(dto.Lozinka),
-                VremeKreiranja = DateTime.UtcNow
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                CreatedAt = DateTime.UtcNow
             };
 
-            _db.StandardniKorisnici.Add(korisnik);
+            _db.StandardUsers.Add(user);
             await _db.SaveChangesAsync();
 
-            return BuildResponse(korisnik);
+            return BuildResponse(user);
         }
 
         public async Task<AuthResponseDto> RegisterAdminAsync(RegisterAdminDto dto)
         {
-            var tajniKod = _configuration["Admin:RegistrationSecret"];
-            if (string.IsNullOrEmpty(tajniKod) || dto.TajniKod != tajniKod)
+            var secretCode = _configuration["Admin:RegistrationSecret"];
+            if (string.IsNullOrEmpty(secretCode) || dto.SecretCode != secretCode)
             {
                 throw new ValidationException("Pogrešan tajni kod.");
             }
 
-            var postoji = await _db.Korisnici.AnyAsync(k =>
-                k.KorisnickoIme == dto.KorisnickoIme || k.Email == dto.Email);
-            if (postoji)
+            var exists = await _db.Users.AnyAsync(k =>
+                k.Username == dto.Username || k.Email == dto.Email);
+            if (exists)
             {
                 throw new ConflictException("Korisničko ime ili email su već zauzeti.");
             }
 
             var admin = new Admin
             {
-                KorisnickoIme = dto.KorisnickoIme,
+                Username = dto.Username,
                 Email = dto.Email,
-                LozinkaHash = BCrypt.Net.BCrypt.HashPassword(dto.Lozinka),
-                VremeKreiranja = DateTime.UtcNow
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                CreatedAt = DateTime.UtcNow
             };
 
-            _db.Admini.Add(admin);
+            _db.Admins.Add(admin);
             await _db.SaveChangesAsync();
 
             return BuildResponse(admin);
@@ -73,24 +73,24 @@ namespace Lost_Found.Services
 
         public async Task<AuthResponseDto> LoginAsync(LoginDto dto)
         {
-            var korisnik = await _db.Korisnici
-                .FirstOrDefaultAsync(k => k.KorisnickoIme == dto.KorisnickoIme);
+            var user = await _db.Users
+                .FirstOrDefaultAsync(k => k.Username == dto.Username);
 
-            if (korisnik is null || !BCrypt.Net.BCrypt.Verify(dto.Lozinka, korisnik.LozinkaHash))
+            if (user is null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
             {
                 throw new ValidationException("Pogrešno korisničko ime ili lozinka.");
             }
 
-            return BuildResponse(korisnik);
+            return BuildResponse(user);
         }
 
-        private AuthResponseDto BuildResponse(Korisnik korisnik) => new()
+        private AuthResponseDto BuildResponse(User user) => new()
         {
-            Token = _jwtTokenService.GenerateToken(korisnik),
-            KorisnikId = korisnik.KorisnikId,
-            KorisnickoIme = korisnik.KorisnickoIme,
-            Email = korisnik.Email,
-            Uloga = korisnik is Admin ? "Admin" : "StandardniKorisnik"
+            Token = _jwtTokenService.GenerateToken(user),
+            UserId = user.UserId,
+            Username = user.Username,
+            Email = user.Email,
+            Role = user is Admin ? "Admin" : "StandardUser"
         };
     }
 }
