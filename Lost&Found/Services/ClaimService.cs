@@ -18,7 +18,7 @@ namespace Lost_Found.Services
 
         public async Task<ClaimDto> CreateAsync(int listingId, int userId)
         {
-            var listingExists = await _db.Listings.AnyAsync(o => o.ListingId == listingId);
+            var listingExists = await _db.Listings.AnyAsync(o => o.ListingId == listingId && !o.IsDeleted);
             if (!listingExists)
             {
                 throw new NotFoundException($"Oglas {listingId} ne postoji.");
@@ -47,7 +47,7 @@ namespace Lost_Found.Services
 
         public async Task<IReadOnlyList<ClaimDto>> GetForListingAsync(int listingId, int currentUserId, bool isAdmin)
         {
-            var listing = await _db.Listings.FirstOrDefaultAsync(o => o.ListingId == listingId)
+            var listing = await _db.Listings.FirstOrDefaultAsync(o => o.ListingId == listingId && !o.IsDeleted)
                 ?? throw new NotFoundException($"Oglas {listingId} ne postoji.");
 
             if (!isAdmin && listing.CreatorId != currentUserId)

@@ -31,7 +31,7 @@ namespace Lost_Found.Services
 
         public async Task<IReadOnlyList<ListingDto>> GetAllAsync(ListingType? type, int? creatorId, int? adminId, Category? category, string? city, bool? activeOnly)
         {
-            var query = _db.Listings.Include(o => o.Creator).Include(o => o.Admin).AsQueryable();
+            var query = _db.Listings.Include(o => o.Creator).Include(o => o.Admin).Where(o => !o.IsDeleted);
 
             if (type.HasValue) query = query.Where(o => o.Type == type.Value);
             if (creatorId.HasValue) query = query.Where(o => o.CreatorId == creatorId.Value);
@@ -56,7 +56,7 @@ namespace Lost_Found.Services
         public async Task<ListingDto> GetByIdAsync(int listingId, int? currentUserId, bool isAdmin)
         {
             var listing = await _db.Listings.Include(o => o.Creator).Include(o => o.Admin)
-                .FirstOrDefaultAsync(o => o.ListingId == listingId)
+                .FirstOrDefaultAsync(o => o.ListingId == listingId && !o.IsDeleted)
                 ?? throw new NotFoundException($"Oglas {listingId} ne postoji.");
 
             var canSeeLocationDescription = isAdmin || (currentUserId.HasValue && listing.CreatorId == currentUserId.Value);
@@ -89,7 +89,7 @@ namespace Lost_Found.Services
         public async Task<ListingDto> UpdateAsync(int listingId, int currentUserId, bool isAdmin, ListingUpdateDto dto)
         {
             var listing = await _db.Listings.Include(o => o.Creator).Include(o => o.Admin)
-                .FirstOrDefaultAsync(o => o.ListingId == listingId)
+                .FirstOrDefaultAsync(o => o.ListingId == listingId && !o.IsDeleted)
                 ?? throw new NotFoundException($"Oglas {listingId} ne postoji.");
 
             if (!isAdmin && listing.CreatorId != currentUserId)
@@ -114,7 +114,7 @@ namespace Lost_Found.Services
 
         public async Task DeleteAsync(int listingId, int currentUserId, bool isAdmin)
         {
-            var listing = await _db.Listings.FirstOrDefaultAsync(o => o.ListingId == listingId)
+            var listing = await _db.Listings.FirstOrDefaultAsync(o => o.ListingId == listingId && !o.IsDeleted)
                 ?? throw new NotFoundException($"Oglas {listingId} ne postoji.");
 
             if (!isAdmin && listing.CreatorId != currentUserId)
@@ -122,28 +122,8 @@ namespace Lost_Found.Services
                 throw new ForbiddenException("Samo vlasnik oglasa ili admin mogu da ga obrišu.");
             }
 
-            _db.Listings.Remove(listing);
+            listing.IsDeleted = true;
             await _db.SaveChangesAsync();
-        }
-
-        public async Task<ListingDto> AssignAdminAsync(int listingId, int? adminId)
-        {
-            var listing = await _db.Listings.Include(o => o.Creator)
-                .FirstOrDefaultAsync(o => o.ListingId == listingId)
-                ?? throw new NotFoundException($"Oglas {listingId} ne postoji.");
-
-            Admin? admin = null;
-            if (adminId.HasValue)
-            {
-                admin = await _db.Admins.FirstOrDefaultAsync(a => a.UserId == adminId.Value)
-                    ?? throw new NotFoundException($"Admin {adminId} ne postoji.");
-            }
-
-            listing.AdminId = adminId;
-            listing.Admin = admin;
-            await _db.SaveChangesAsync();
-
-            return ToDto(listing);
         }
 
         public async Task<string> SavePhotoAsync(IFormFile file, string baseUrl)

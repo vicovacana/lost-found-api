@@ -15,6 +15,7 @@ namespace Lost_Found.Models
         public decimal? Longitude { get; set; }
         public string? Photo { get; set; }
         public string? LocationDescription { get; set; }
+        public bool IsDeleted { get; set; }
 
         public int CreatorId { get; set; }
         public StandardUser Creator { get; set; } = null!;

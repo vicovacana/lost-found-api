@@ -67,11 +67,17 @@ namespace Lost_Found.Data.Configurations
             builder.Property(o => o.CreatorId).HasColumnName("kreatorID").IsRequired();
             builder.Property(o => o.AdminId).HasColumnName("adminID");
 
+            builder.Property(o => o.IsDeleted)
+                .HasColumnName("obrisan")
+                .IsRequired()
+                .HasDefaultValue(false);
+
             builder.HasIndex(o => o.CreatorId);
             builder.HasIndex(o => o.AdminId);
             builder.HasIndex(o => o.Type);
             builder.HasIndex(o => o.Category);
             builder.HasIndex(o => o.City);
+            builder.HasIndex(o => o.IsDeleted);
         }
     }
 }

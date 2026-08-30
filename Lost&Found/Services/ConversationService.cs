@@ -18,7 +18,7 @@ namespace Lost_Found.Services
 
         public async Task<ConversationDto> OpenAsync(int listingId, int adminId)
         {
-            var listing = await _db.Listings.FirstOrDefaultAsync(o => o.ListingId == listingId)
+            var listing = await _db.Listings.FirstOrDefaultAsync(o => o.ListingId == listingId && !o.IsDeleted)
                 ?? throw new NotFoundException($"Oglas {listingId} ne postoji.");
 
             if (listing.AdminId.HasValue && listing.AdminId.Value != adminId)
@@ -49,7 +49,8 @@ namespace Lost_Found.Services
 
         public async Task<ConversationDto> GetForListingAsync(int listingId, int currentUserId, bool isAdmin)
         {
-            var conversation = await _db.Conversations.Include(r => r.Listing).FirstOrDefaultAsync(r => r.ListingId == listingId)
+            var conversation = await _db.Conversations.Include(r => r.Listing)
+                .FirstOrDefaultAsync(r => r.ListingId == listingId && !r.Listing.IsDeleted)
                 ?? throw new NotFoundException($"Razgovor za oglas {listingId} ne postoji.");
 
             await EnsureParticipantAsync(currentUserId, isAdmin, conversation);
@@ -58,7 +59,8 @@ namespace Lost_Found.Services
 
         public async Task<ConversationDto> GetByIdAsync(int conversationId, int currentUserId, bool isAdmin)
         {
-            var conversation = await _db.Conversations.Include(r => r.Listing).FirstOrDefaultAsync(r => r.ConversationId == conversationId)
+            var conversation = await _db.Conversations.Include(r => r.Listing)
+                .FirstOrDefaultAsync(r => r.ConversationId == conversationId && !r.Listing.IsDeleted)
                 ?? throw new NotFoundException($"Razgovor {conversationId} ne postoji.");
 
             await EnsureParticipantAsync(currentUserId, isAdmin, conversation);
@@ -78,7 +80,7 @@ namespace Lost_Found.Services
 
         public async Task<IReadOnlyList<ConversationDto>> GetMineAsync(int currentUserId, bool isAdmin)
         {
-            IQueryable<Conversation> query = _db.Conversations.Include(r => r.Listing);
+            IQueryable<Conversation> query = _db.Conversations.Include(r => r.Listing).Where(r => !r.Listing.IsDeleted);
 
             query = isAdmin
                 ? query.Where(r => r.Listing.AdminId == currentUserId)
@@ -99,7 +101,8 @@ namespace Lost_Found.Services
 
         public async Task EnsureParticipantAsync(int conversationId, int currentUserId, bool isAdmin)
         {
-            var conversation = await _db.Conversations.Include(r => r.Listing).FirstOrDefaultAsync(r => r.ConversationId == conversationId)
+            var conversation = await _db.Conversations.Include(r => r.Listing)
+                .FirstOrDefaultAsync(r => r.ConversationId == conversationId && !r.Listing.IsDeleted)
                 ?? throw new NotFoundException($"Razgovor {conversationId} ne postoji.");
 
             await EnsureParticipantAsync(currentUserId, isAdmin, conversation);

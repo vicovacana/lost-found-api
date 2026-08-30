@@ -11,7 +11,6 @@ namespace Lost_Found.Services
         Task<ListingDto> CreateAsync(int creatorId, ListingCreateDto dto);
         Task<ListingDto> UpdateAsync(int listingId, int currentUserId, bool isAdmin, ListingUpdateDto dto);
         Task DeleteAsync(int listingId, int currentUserId, bool isAdmin);
-        Task<ListingDto> AssignAdminAsync(int listingId, int? adminId);
         Task<string> SavePhotoAsync(IFormFile file, string baseUrl);
     }
 }

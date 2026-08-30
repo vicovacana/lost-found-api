@@ -65,20 +65,5 @@ namespace Lost_Found.Controllers
             await _listingService.DeleteAsync(id, CurrentUserId, IsAdmin);
             return NoContent();
         }
-
-        [HttpPatch("{id:int}/admin")]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<ListingDto>> AssignAdmin(int id, AssignAdminDto dto)
-        {
-            var adminId = dto.AdminId ?? CurrentUserId;
-            return Ok(await _listingService.AssignAdminAsync(id, adminId));
-        }
-
-        [HttpDelete("{id:int}/admin")]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<ListingDto>> ClearAdmin(int id)
-        {
-            return Ok(await _listingService.AssignAdminAsync(id, null));
-        }
     }
 }
