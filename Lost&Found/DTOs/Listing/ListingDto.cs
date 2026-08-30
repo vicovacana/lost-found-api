@@ -19,5 +19,6 @@ namespace Lost_Found.DTOs.Listing
         public int CreatorId { get; set; }
         public string CreatorUsername { get; set; } = string.Empty;
         public int? AdminId { get; set; }
+        public string? AdminUsername { get; set; }
     }
 }

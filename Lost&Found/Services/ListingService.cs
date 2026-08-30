@@ -31,7 +31,7 @@ namespace Lost_Found.Services
 
         public async Task<IReadOnlyList<ListingDto>> GetAllAsync(ListingType? type, int? creatorId, int? adminId, Category? category, string? city, bool? activeOnly)
         {
-            var query = _db.Listings.Include(o => o.Creator).AsQueryable();
+            var query = _db.Listings.Include(o => o.Creator).Include(o => o.Admin).AsQueryable();
 
             if (type.HasValue) query = query.Where(o => o.Type == type.Value);
             if (creatorId.HasValue) query = query.Where(o => o.CreatorId == creatorId.Value);
@@ -55,7 +55,7 @@ namespace Lost_Found.Services
 
         public async Task<ListingDto> GetByIdAsync(int listingId, int? currentUserId, bool isAdmin)
         {
-            var listing = await _db.Listings.Include(o => o.Creator)
+            var listing = await _db.Listings.Include(o => o.Creator).Include(o => o.Admin)
                 .FirstOrDefaultAsync(o => o.ListingId == listingId)
                 ?? throw new NotFoundException($"Oglas {listingId} ne postoji.");
 
@@ -88,7 +88,7 @@ namespace Lost_Found.Services
 
         public async Task<ListingDto> UpdateAsync(int listingId, int currentUserId, bool isAdmin, ListingUpdateDto dto)
         {
-            var listing = await _db.Listings.Include(o => o.Creator)
+            var listing = await _db.Listings.Include(o => o.Creator).Include(o => o.Admin)
                 .FirstOrDefaultAsync(o => o.ListingId == listingId)
                 ?? throw new NotFoundException($"Oglas {listingId} ne postoji.");
 
@@ -132,16 +132,15 @@ namespace Lost_Found.Services
                 .FirstOrDefaultAsync(o => o.ListingId == listingId)
                 ?? throw new NotFoundException($"Oglas {listingId} ne postoji.");
 
+            Admin? admin = null;
             if (adminId.HasValue)
             {
-                var adminExists = await _db.Admins.AnyAsync(a => a.UserId == adminId.Value);
-                if (!adminExists)
-                {
-                    throw new NotFoundException($"Admin {adminId} ne postoji.");
-                }
+                admin = await _db.Admins.FirstOrDefaultAsync(a => a.UserId == adminId.Value)
+                    ?? throw new NotFoundException($"Admin {adminId} ne postoji.");
             }
 
             listing.AdminId = adminId;
+            listing.Admin = admin;
             await _db.SaveChangesAsync();
 
             return ToDto(listing);
@@ -203,7 +202,8 @@ namespace Lost_Found.Services
             LocationDescription = includeLocationDescription ? listing.LocationDescription : null,
             CreatorId = listing.CreatorId,
             CreatorUsername = listing.Creator?.Username ?? string.Empty,
-            AdminId = listing.AdminId
+            AdminId = listing.AdminId,
+            AdminUsername = listing.Admin?.Username
         };
     }
 }

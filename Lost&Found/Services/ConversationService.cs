@@ -16,16 +16,23 @@ namespace Lost_Found.Services
             _db = db;
         }
 
-        public async Task<ConversationDto> OpenAsync(int listingId)
+        public async Task<ConversationDto> OpenAsync(int listingId, int adminId)
         {
             var listing = await _db.Listings.FirstOrDefaultAsync(o => o.ListingId == listingId)
                 ?? throw new NotFoundException($"Oglas {listingId} ne postoji.");
+
+            if (listing.AdminId.HasValue && listing.AdminId.Value != adminId)
+            {
+                throw new ForbiddenException("Oglas je već dodeljen drugom administratoru.");
+            }
 
             var alreadyExists = await _db.Conversations.AnyAsync(r => r.ListingId == listingId);
             if (alreadyExists)
             {
                 throw new ConflictException("Razgovor za ovaj oglas već postoji.");
             }
+
+            listing.AdminId = adminId;
 
             var conversation = new Conversation
             {
@@ -73,11 +80,10 @@ namespace Lost_Found.Services
         {
             IQueryable<Conversation> query = _db.Conversations.Include(r => r.Listing);
 
-            if (!isAdmin)
-            {
-                query = query.Where(r => r.Listing.CreatorId == currentUserId
+            query = isAdmin
+                ? query.Where(r => r.Listing.AdminId == currentUserId)
+                : query.Where(r => r.Listing.CreatorId == currentUserId
                     || _db.Claims.Any(p => p.ListingId == r.ListingId && p.UserId == currentUserId));
-            }
 
             var conversations = await query.OrderByDescending(r => r.CreatedAt).ToListAsync();
 
@@ -93,7 +99,7 @@ namespace Lost_Found.Services
 
         public async Task EnsureParticipantAsync(int conversationId, int currentUserId, bool isAdmin)
         {
-            var conversation = await _db.Conversations.FirstOrDefaultAsync(r => r.ConversationId == conversationId)
+            var conversation = await _db.Conversations.Include(r => r.Listing).FirstOrDefaultAsync(r => r.ConversationId == conversationId)
                 ?? throw new NotFoundException($"Razgovor {conversationId} ne postoji.");
 
             await EnsureParticipantAsync(currentUserId, isAdmin, conversation);
@@ -103,7 +109,12 @@ namespace Lost_Found.Services
         {
             if (isAdmin)
             {
-                return;
+                if (conversation.Listing.AdminId == currentUserId)
+                {
+                    return;
+                }
+
+                throw new ForbiddenException("Niste administrator dodeljen ovom oglasu.");
             }
 
             var isListingOwner = await _db.Listings.AnyAsync(o => o.ListingId == conversation.ListingId && o.CreatorId == currentUserId);

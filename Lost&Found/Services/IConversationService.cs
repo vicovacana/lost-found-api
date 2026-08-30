@@ -5,7 +5,7 @@ namespace Lost_Found.Services
 {
     public interface IConversationService
     {
-        Task<ConversationDto> OpenAsync(int listingId);
+        Task<ConversationDto> OpenAsync(int listingId, int adminId);
         Task<ConversationDto> GetForListingAsync(int listingId, int currentUserId, bool isAdmin);
         Task<ConversationDto> GetByIdAsync(int conversationId, int currentUserId, bool isAdmin);
         Task<ConversationDto> UpdateStatusAsync(int conversationId, ConversationStatus newStatus);

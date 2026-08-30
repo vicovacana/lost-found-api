@@ -26,7 +26,7 @@ namespace Lost_Found.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<ConversationDto>> Open(int oglasId)
         {
-            var result = await _conversationService.OpenAsync(oglasId);
+            var result = await _conversationService.OpenAsync(oglasId, CurrentUserId);
             return CreatedAtAction(nameof(GetById), new { id = result.ConversationId }, result);
         }
 
