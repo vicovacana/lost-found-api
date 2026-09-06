@@ -43,7 +43,6 @@ namespace Lost_Found.Controllers
             return Ok(await _claimService.UpdateStatusAsync(oglasId, korisnikId, dto.Status));
         }
 
-        //proveri da li se ovo koristiii
         [HttpDelete("api/oglasi/{oglasId:int}/potrazivanja/{korisnikId:int}")]
         public async Task<IActionResult> Withdraw(int oglasId, int korisnikId)
         {
