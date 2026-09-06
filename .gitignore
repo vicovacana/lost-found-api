@@ -11,3 +11,6 @@ obj/
 ## OS
 .DS_Store
 Thumbs.db
+
+## Docs (not tracked)
+*.pdf
