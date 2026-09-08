@@ -12,5 +12,7 @@ namespace Lost_Found.Models
 
         public DateTime CreatedAt { get; set; }
         public string Content { get; set; } = string.Empty;
+
+        public List<int> ReadBy { get; set; } = new();
     }
 }

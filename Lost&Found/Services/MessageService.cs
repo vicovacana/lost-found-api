@@ -1,8 +1,10 @@
 using Lost_Found.Common;
 using Lost_Found.Data;
 using Lost_Found.DTOs.Message;
+using Lost_Found.Hubs;
 using Lost_Found.Models;
 using Lost_Found.Models.Enums;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Lost_Found.Services
@@ -11,11 +13,13 @@ namespace Lost_Found.Services
     {
         private readonly ApplicationDbContext _db;
         private readonly IConversationService _conversationService;
+        private readonly IHubContext<ChatHub> _hubContext;
 
-        public MessageService(ApplicationDbContext db, IConversationService conversationService)
+        public MessageService(ApplicationDbContext db, IConversationService conversationService, IHubContext<ChatHub> hubContext)
         {
             _db = db;
             _conversationService = conversationService;
+            _hubContext = hubContext;
         }
 
         public async Task<IReadOnlyList<MessageDto>> GetForConversationAsync(int conversationId, int currentUserId, bool isAdmin)
@@ -48,14 +52,44 @@ namespace Lost_Found.Services
                 ConversationId = conversationId,
                 UserId = userId,
                 Content = dto.Content,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                ReadBy = new List<int> { userId }
             };
 
             _db.Messages.Add(message);
             await _db.SaveChangesAsync();
 
             await _db.Entry(message).Reference(p => p.User).LoadAsync();
-            return ToDto(message);
+            var result = ToDto(message);
+
+            await _hubContext.Clients.Group(ChatHub.ConversationGroup(conversationId))
+                .SendAsync("ReceiveMessage", result);
+
+            var participantIds = await _conversationService.GetParticipantIdsAsync(conversationId);
+            var recipientIds = participantIds.Where(id => id != userId);
+            await _hubContext.Clients.Groups(recipientIds.Select(ChatHub.UserGroup))
+                .SendAsync("NewMessageNotification", new { conversationId });
+
+            return result;
+        }
+
+        public async Task MarkAsReadAsync(int conversationId, int userId, bool isAdmin)
+        {
+            await _conversationService.EnsureParticipantAsync(conversationId, userId, isAdmin);
+
+            var unreadMessages = await _db.Messages
+                .Where(p => p.ConversationId == conversationId && p.UserId != userId && !p.ReadBy.Contains(userId))
+                .ToListAsync();
+
+            foreach (var message in unreadMessages)
+            {
+                message.ReadBy.Add(userId);
+            }
+
+            if (unreadMessages.Count > 0)
+            {
+                await _db.SaveChangesAsync();
+            }
         }
 
         private static MessageDto ToDto(Message message) => new()

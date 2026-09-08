@@ -26,6 +26,12 @@ namespace Lost_Found.Data.Configurations
                 .IsRequired()
                 .HasMaxLength(4000);
 
+            builder.Property(p => p.ReadBy)
+                .HasColumnName("procitaliKorisnici")
+                .HasColumnType("integer[]")
+                .IsRequired()
+                .HasDefaultValueSql("'{}'");
+
             builder.HasIndex(p => new { p.ConversationId, p.CreatedAt });
 
             builder.HasOne(p => p.Conversation)

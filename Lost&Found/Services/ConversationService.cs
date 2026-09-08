@@ -96,7 +96,42 @@ namespace Lost_Found.Services
                 .ToListAsync();
             var confirmedSet = confirmedListingIdsForMe.ToHashSet();
 
-            return conversations.Select(r => ToDto(r, r.Listing, confirmedSet.Contains(r.ListingId))).ToList();
+            var conversationIds = conversations.Select(r => r.ConversationId).ToList();
+            var unreadConversationIds = (await _db.Messages
+                .Where(m => conversationIds.Contains(m.ConversationId)
+                    && m.UserId != currentUserId
+                    && !m.ReadBy.Contains(currentUserId))
+                .Select(m => m.ConversationId)
+                .Distinct()
+                .ToListAsync()).ToHashSet();
+
+            return conversations
+                .Select(r => ToDto(r, r.Listing, confirmedSet.Contains(r.ListingId), unreadConversationIds.Contains(r.ConversationId)))
+                .ToList();
+        }
+
+        public async Task<IReadOnlyList<int>> GetParticipantIdsAsync(int conversationId)
+        {
+            var conversation = await _db.Conversations.Include(r => r.Listing)
+                .FirstOrDefaultAsync(r => r.ConversationId == conversationId)
+                ?? throw new NotFoundException($"Razgovor {conversationId} ne postoji.");
+
+            var ids = new HashSet<int> { conversation.Listing.CreatorId };
+            if (conversation.Listing.AdminId.HasValue)
+            {
+                ids.Add(conversation.Listing.AdminId.Value);
+            }
+
+            var claimantIds = await _db.Claims
+                .Where(p => p.ListingId == conversation.ListingId)
+                .Select(p => p.UserId)
+                .ToListAsync();
+            foreach (var id in claimantIds)
+            {
+                ids.Add(id);
+            }
+
+            return ids.ToList();
         }
 
         public async Task EnsureParticipantAsync(int conversationId, int currentUserId, bool isAdmin)
@@ -140,17 +175,23 @@ namespace Lost_Found.Services
             var isConfirmedClaimant = await _db.Claims.AnyAsync(p =>
                 p.ListingId == conversation.ListingId && p.UserId == currentUserId && p.Status == ClaimStatus.Accepted);
 
-            return ToDto(conversation, listing, isConfirmedClaimant);
+            var hasUnread = await _db.Messages.AnyAsync(m =>
+                m.ConversationId == conversation.ConversationId
+                && m.UserId != currentUserId
+                && !m.ReadBy.Contains(currentUserId));
+
+            return ToDto(conversation, listing, isConfirmedClaimant, hasUnread);
         }
 
-        private static ConversationDto ToDto(Conversation conversation, Listing listing, bool showLocationDescription) => new()
+        private static ConversationDto ToDto(Conversation conversation, Listing listing, bool showLocationDescription, bool hasUnread = false) => new()
         {
             ConversationId = conversation.ConversationId,
             CreatedAt = conversation.CreatedAt,
             Status = conversation.Status,
             ListingId = conversation.ListingId,
             ListingTitle = listing.Title,
-            LocationDescription = showLocationDescription ? listing.LocationDescription : null
+            LocationDescription = showLocationDescription ? listing.LocationDescription : null,
+            HasUnread = hasUnread
         };
     }
 }

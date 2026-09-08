@@ -11,5 +11,6 @@ namespace Lost_Found.Services
         Task<ConversationDto> UpdateStatusAsync(int conversationId, ConversationStatus newStatus);
         Task<IReadOnlyList<ConversationDto>> GetMineAsync(int currentUserId, bool isAdmin);
         Task EnsureParticipantAsync(int conversationId, int currentUserId, bool isAdmin);
+        Task<IReadOnlyList<int>> GetParticipantIdsAsync(int conversationId);
     }
 }

@@ -1,6 +1,7 @@
 using System.Text;
 using Lost_Found.Common;
 using Lost_Found.Data;
+using Lost_Found.Hubs;
 using Lost_Found.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,7 @@ namespace Lost_Found
 
             builder.Services.AddControllers();
             builder.Services.AddOpenApi();
+            builder.Services.AddSignalR();
 
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -44,6 +46,20 @@ namespace Lost_Found
                         ValidateIssuerSigningKey = true,
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
                     };
+
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            var accessToken = context.Request.Query["access_token"];
+                            var path = context.HttpContext.Request.Path;
+                            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                            {
+                                context.Token = accessToken;
+                            }
+                            return Task.CompletedTask;
+                        }
+                    };
                 });
 
             builder.Services.AddAuthorization();
@@ -54,7 +70,8 @@ namespace Lost_Found
                 options.AddPolicy(AngularDevCors, policy =>
                     policy.WithOrigins("http://localhost:4200")
                           .AllowAnyHeader()
-                          .AllowAnyMethod());
+                          .AllowAnyMethod()
+                          .AllowCredentials());
             });
 
             builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
@@ -89,6 +106,7 @@ namespace Lost_Found
             app.UseAuthorization();
 
             app.MapControllers();
+            app.MapHub<ChatHub>("/hubs/chat");
 
             app.Run();
         }

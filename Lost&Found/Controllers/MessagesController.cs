@@ -28,5 +28,12 @@ namespace Lost_Found.Controllers
             var result = await _messageService.CreateAsync(razgovorId, CurrentUserId, IsAdmin, dto);
             return CreatedAtAction(nameof(GetForConversation), new { razgovorId }, result);
         }
+
+        [HttpPatch("api/razgovori/{razgovorId:int}/procitano")]
+        public async Task<IActionResult> MarkAsRead(int razgovorId)
+        {
+            await _messageService.MarkAsReadAsync(razgovorId, CurrentUserId, IsAdmin);
+            return NoContent();
+        }
     }
 }

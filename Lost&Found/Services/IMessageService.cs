@@ -6,5 +6,6 @@ namespace Lost_Found.Services
     {
         Task<IReadOnlyList<MessageDto>> GetForConversationAsync(int conversationId, int currentUserId, bool isAdmin);
         Task<MessageDto> CreateAsync(int conversationId, int userId, bool isAdmin, MessageCreateDto dto);
+        Task MarkAsReadAsync(int conversationId, int userId, bool isAdmin);
     }
 }

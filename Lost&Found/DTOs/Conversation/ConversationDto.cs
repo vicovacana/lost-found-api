@@ -10,5 +10,6 @@ namespace Lost_Found.DTOs.Conversation
         public int ListingId { get; set; }
         public string ListingTitle { get; set; } = string.Empty;
         public string? LocationDescription { get; set; }
+        public bool HasUnread { get; set; }
     }
 }
